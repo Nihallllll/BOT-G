@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id Int  @id @default(autoincrement())
+  discordId String
+  githubId String
+  is_verified Boolean
+  is_linked Boolean
+  last_synced Boolean
+
+  contributions  Contribution[]
+  standing Standings[]
+}
+
+model Contribution{
+  userId Int @id @default(autoincrement())
+  type Type
+  repo_name String
+  points Int
+  timeline DateTime[]
+  metadata Json
+  user User @relation(fields: [userId] , references: [id])
+}
+
+model Standings{
+  userId Int @id
+  total_points Int
+  pr_count Int
+  user User @relation(fields: [userId] , references: [id])
+}
+
+enum Type{
+  PR 
+  REVIEW
+  ISSUE
+}
