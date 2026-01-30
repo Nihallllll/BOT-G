@@ -13,37 +13,143 @@ datasource db {
   provider = "postgresql"
 }
 
+// model User {
+//   id Int  @id @default(autoincrement())
+//   discordId String
+//   githubId String
+//   is_verified Boolean
+//   is_linked Boolean
+//   last_synced Boolean
+
+//   contributions  Contribution[]
+//   standing Standings[]
+// }
+
+// model Contribution{
+//   userId Int @id @default(autoincrement())
+//   type Type
+//   repo_name String
+//   points Int
+//   timeline DateTime[]
+//   metadata Json
+//   user User @relation(fields: [userId] , references: [id])
+// }
+
+// model Standings{
+//   userId Int @id
+//   total_points Int
+//   pr_count Int
+//   user User @relation(fields: [userId] , references: [id])
+// }
+
+// enum Type{
+//   PR 
+//   REVIEW
+//   ISSUE
+// }
+
 model User {
-  id Int  @id @default(autoincrement())
-  discordId String
-  githubId String
-  is_verified Boolean
-  is_linked Boolean
-  last_synced Boolean
+  id             Int       @id @default(autoincrement())
+  discordId      String    @unique @map("discord_id")
+  githubUsername String?   @unique @map("github_username")
+  isVerified     Boolean   @default(false) @map("is_verified")
+  linkedAt       DateTime? @map("linked_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  contributions  Contribution[]
-  standing Standings[]
+  contributions     Contribution[]
+  score             Score?
+  assignedIssues    AssignedIssue[]
+  userAchievements  UserAchievement[]
+
+  @@map("users")
 }
 
-model Contribution{
-  userId Int @id @default(autoincrement())
-  type Type
-  repo_name String
-  points Int
-  timeline DateTime[]
-  metadata Json
-  user User @relation(fields: [userId] , references: [id])
+model Contribution {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  type       String
+  repoName   String   @map("repo_name")
+  githubId   Int      @map("github_id")
+  points     Int
+  metadata   String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([type, repoName, githubId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("contributions")
 }
 
-model Standings{
-  userId Int @id
-  total_points Int
-  pr_count Int
-  user User @relation(fields: [userId] , references: [id])
+model Score {
+  userId            Int       @id @map("user_id")
+  totalPoints       Int       @default(0) @map("total_points")
+  rank              Int       @default(0)
+  prCount           Int       @default(0) @map("pr_count")
+  reviewCount       Int       @default(0) @map("review_count")
+  issueCount        Int       @default(0) @map("issue_count")
+  currentStreak     Int       @default(0) @map("current_streak")
+  longestStreak     Int       @default(0) @map("longest_streak")
+  lastContribution  DateTime? @map("last_contribution")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([totalPoints(sort: Desc)])
+  @@index([rank])
+  @@map("scores")
 }
 
-enum Type{
-  PR 
-  REVIEW
-  ISSUE
+model Achievement {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  title       String
+  description String
+  icon        String
+  pointsBonus Int      @map("points_bonus")
+  criteria    String   @db.Text
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  userId        Int      @map("user_id")
+  achievementId Int      @map("achievement_id")
+  earnedAt      DateTime @default(now()) @map("earned_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@id([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model AssignedIssue {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  repoName      String   @map("repo_name")
+  issueNumber   Int      @map("issue_number")
+  assignedAt    DateTime @default(now()) @map("assigned_at")
+  lastActivity  DateTime @default(now()) @map("last_activity")
+  status        String   @default("assigned")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([repoName, issueNumber])
+  @@index([userId])
+  @@map("assigned_issues")
+}
+
+model SyncState {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  lastSync  DateTime @map("last_sync")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("sync_state")
 }

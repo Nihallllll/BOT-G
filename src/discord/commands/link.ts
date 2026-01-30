@@ -1,30 +1,36 @@
-import { SlashCommandBuilder } from 'discord.js';
-import type { ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
+import { userQueries } from '../../database/queries.js';
+import { config } from '../../config/env.js';
 
 export const linkCommand = {
   data: new SlashCommandBuilder()
     .setName('link-github')
-    .setDescription('Link your Discord account to GitHub')
-    .addStringOption(option =>
-      option
-        .setName('username')
-        .setDescription('Your GitHub username')
-        .setRequired(true)
-    ),
+    .setDescription('Link your Discord account to GitHub'),
     
   async execute(interaction: ChatInputCommandInteraction) {
-    // Your logic here
-    const username = interaction.options.getString('username', true);
+    const discordId = interaction.user.id;
     
-    // 1. Validate username format
-    // 2. Check if user already linked
-    // 3. Check if GitHub username exists
-    // 4. Generate verification token
-    // 5. Send instructions
+    const user = await userQueries.findByDiscordId(discordId);
+    if (user?.githubUsername) {
+      return interaction.reply({
+        content: `You're already linked to GitHub user: **${user.githubUsername}**`,
+        ephemeral: true,
+      });
+    }
+    
+    const oauthUrl = `${config.github.oauth.callbackUrl.replace('/auth/callback', '')}/auth/start?discord_id=${discordId}`;
+    
+    const button = new ButtonBuilder()
+      .setLabel('Link GitHub Account')
+      .setStyle(ButtonStyle.Link)
+      .setURL(oauthUrl);
+    
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
     
     await interaction.reply({
-      content: 'Your linking instructions here...',
-      ephemeral: true  // Only user sees this
+      content: '🔗 Click the button below to link your GitHub account:',
+      components: [row],
+      ephemeral: true,
     });
   },
 };

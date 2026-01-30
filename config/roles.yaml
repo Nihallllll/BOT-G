@@ -1,0 +1,27 @@
+roles:
+  verified_contributor:
+    discord_role_id: "REPLACE_WITH_ACTUAL_ROLE_ID"
+    name: "Verified Contributor"
+    criteria:
+      must_have:
+        linked_github: true
+        min_merged_prs: 1
+    remove_if:
+      unlinked_github: true
+  
+  active_contributor:
+    discord_role_id: "REPLACE_WITH_ACTUAL_ROLE_ID"
+    name: "Active Contributor"
+    criteria:
+      any_of:
+        merged_prs_last_90_days: 5
+        reviews_last_90_days: 10
+    remove_if:
+      days_since_last_contribution: 120
+  
+  core_contributor:
+    discord_role_id: "REPLACE_WITH_ACTUAL_ROLE_ID"
+    name: "Core Contributor"
+    criteria:
+      must_have:
+        total_merged_prs: 20

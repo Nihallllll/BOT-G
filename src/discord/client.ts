@@ -1,5 +1,5 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { config } from '../config/env';
+import { config } from '../config/env.js';
 
 export const discordClient = new Client({
   intents: [
@@ -8,12 +8,11 @@ export const discordClient = new Client({
   ],
 });
 
-// Event: Bot is ready 
 discordClient.once(Events.ClientReady, (client) => {
   console.log(`✅ Discord bot logged in as ${client.user.tag}`);
+  console.log(`📊 Serving ${client.guilds.cache.size} servers`);
 });
 
-// Login function
 export async function loginDiscord() {
   await discordClient.login(config.discord.token);
 }
