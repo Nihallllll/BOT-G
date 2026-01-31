@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { userQueries } from '../../database/queries.js';
 import { config } from '../../config/env.js';
 import { prisma } from '../../database/client.js';
@@ -28,20 +28,21 @@ export const assignReviewCommand = {
     ),
     
   async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+    
     const isAdmin = config.discord.adminIds.includes(interaction.user.id);
     const guild = interaction.guild;
     
     if (!guild) {
-      return interaction.reply({ content: '❌ This command can only be used in a server.', ephemeral: true });
+      return interaction.editReply({ content: '❌ This command can only be used in a server.' });
     }
     
     const member = await guild.members.fetch(interaction.user.id);
     const isMentor = config.discord.mentorRoleId && member.roles.cache.has(config.discord.mentorRoleId);
     
     if (!isAdmin && !isMentor) {
-      return interaction.reply({
+      return interaction.editReply({
         content: '❌ Only admins and mentors can assign reviews.',
-        ephemeral: true,
       });
     }
     
@@ -51,9 +52,8 @@ export const assignReviewCommand = {
     
     const targetUser = await userQueries.findByDiscordId(targetDiscordUser.id);
     if (!targetUser?.githubUsername) {
-      return interaction.reply({
+      return interaction.editReply({
         content: '❌ Target user has not linked their GitHub account.',
-        ephemeral: true,
       });
     }
     
@@ -62,9 +62,8 @@ export const assignReviewCommand = {
     });
     
     if (!score || score.totalPoints < config.permissions.reviewerPointsThreshold) {
-      return interaction.reply({
+      return interaction.editReply({
         content: `❌ User needs at least ${config.permissions.reviewerPointsThreshold} points to be assigned reviews. Current: ${score?.totalPoints || 0}`,
-        ephemeral: true,
       });
     }
     
@@ -76,16 +75,15 @@ export const assignReviewCommand = {
         reviewers: [targetUser.githubUsername],
       });
       
-      await interaction.reply({
+      await interaction.editReply({
         content: `✅ Assigned PR review #${prNumber} in ${repo} to ${targetDiscordUser.username}\n` +
           `🔗 https://github.com/${config.github.org}/${repo}/pull/${prNumber}`,
       });
       
     } catch (error) {
       console.error('Error assigning review:', error);
-      await interaction.reply({
+      await interaction.editReply({
         content: '❌ Failed to assign review. Check repo and PR number.',
-        ephemeral: true,
       });
     }
   },

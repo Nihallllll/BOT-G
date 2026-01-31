@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { config } from '../../config/env.js';
 
 export const addMentorCommand = {
@@ -13,10 +13,11 @@ export const addMentorCommand = {
     ),
     
   async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+    
     if (!config.discord.adminIds.includes(interaction.user.id)) {
-      return interaction.reply({
+      return interaction.editReply({
         content: '❌ You do not have permission to use this command.',
-        ephemeral: true,
       });
     }
     
@@ -25,25 +26,24 @@ export const addMentorCommand = {
     try {
       const guild = interaction.guild;
       if (!guild) {
-        return interaction.reply({ content: '❌ This command can only be used in a server.', ephemeral: true });
+        return interaction.editReply({ content: '❌ This command can only be used in a server.' });
       }
       
       if (!config.discord.mentorRoleId) {
-        return interaction.reply({ content: '❌ Mentor role is not configured.', ephemeral: true });
+        return interaction.editReply({ content: '❌ Mentor role is not configured.' });
       }
       
       const member = await guild.members.fetch(targetUser.id);
       await member.roles.add(config.discord.mentorRoleId);
       
-      await interaction.reply({
+      await interaction.editReply({
         content: `✅ Successfully promoted ${targetUser.username} to Mentor`,
       });
       
     } catch (error) {
       console.error('Error adding mentor:', error);
-      await interaction.reply({
+      await interaction.editReply({
         content: '❌ Failed to add mentor. Please check permissions.',
-        ephemeral: true,
       });
     }
   },

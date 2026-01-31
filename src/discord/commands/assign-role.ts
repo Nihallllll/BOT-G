@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, MessageFlags } from 'discord.js';
 import { config } from '../../config/env.js';
 
 export const assignRoleCommand = {
@@ -19,10 +19,11 @@ export const assignRoleCommand = {
     ),
     
   async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+    
     if (!config.discord.adminIds.includes(interaction.user.id)) {
-      return interaction.reply({
+      return interaction.editReply({
         content: '❌ You do not have permission to use this command.',
-        ephemeral: true,
       });
     }
     
@@ -32,21 +33,20 @@ export const assignRoleCommand = {
     try {
       const guild = interaction.guild;
       if (!guild) {
-        return interaction.reply({ content: '❌ This command can only be used in a server.', ephemeral: true });
+        return interaction.editReply({ content: '❌ This command can only be used in a server.' });
       }
       
       const member = await guild.members.fetch(targetUser.id);
       await member.roles.add(role.id);
       
-      await interaction.reply({
+      await interaction.editReply({
         content: `✅ Successfully assigned **${role.name}** to ${targetUser.username}`,
       });
       
     } catch (error) {
       console.error('Error assigning role:', error);
-      await interaction.reply({
+      await interaction.editReply({
         content: '❌ Failed to assign role. Please check permissions.',
-        ephemeral: true,
       });
     }
   },
